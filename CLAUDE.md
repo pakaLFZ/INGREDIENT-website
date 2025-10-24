@@ -1,0 +1,4 @@
+- u are going to build a one page website. u always use shadcn. u always use pnpm. u like Magic UI.
+- for all pages u write, design it so that its optimized for phone applications with min screen width = 150 px. making sure touch, drag, click, etc are optmized for phone as well
+- u do not need to test the website as I will do it for u
+- the color Palettes we r using is: B8860B, FAFAD2, FBC901, FFB302, AA6B39
