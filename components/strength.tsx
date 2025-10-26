@@ -4,7 +4,7 @@ import { TitledImageCard } from "@/components/ui/titled-image-card";
 
 export function Strength() {
   return (
-   <section className="w-screen bg-black overflow-hidden pt-[40px] pb-[60px]">
+   <section className="w-full bg-zinc-900 pt-[40px] pb-[60px]">
     <div className="max-w-[1000px] mx-auto w-full h-full px-4">
         <p className="text-white font-bold text-3xl mb-[20px]">We combat complexity</p>
 
@@ -28,8 +28,6 @@ export function Strength() {
           sample="/image-73-mask.png"
         />
         </div>
-
-        <p className="text-white font-bold text-lg">Book a free session to discuss how computer vision can accelerate your research insights.</p>
 
        </div>
     </section>

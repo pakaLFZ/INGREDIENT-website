@@ -11,7 +11,7 @@ export function Introduction() {
         </p>
 
         <p>
-          We design <AuroraText>computer vision</AuroraText> tools tailored to your needs, so you can think deeper, not dig harder.
+          We design <AuroraText>computer vision</AuroraText> tools tailored to your use case, so you can think deeper, not dig harder.
         </p>
       </div>
     </section>
