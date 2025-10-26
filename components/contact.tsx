@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 
 export default function Contact() {
   return (
-    <div id="contact" className="w-full flex items-center justify-center px-3 pt-6 pb-12 bg-black">
+    <div id="contact" className="w-full flex items-center justify-center px-3 pt-12 pb-18 bg-black">
       <div className="w-full max-w-[500px] space-y-3">
         {/* Header */}
         <div className="text-center space-y-0.5 mb-4">
