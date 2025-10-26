@@ -12,20 +12,20 @@ export function Strength() {
 
           <TitledImageCard
           title="Complex sample identification"
-          mask="/015.png"
-          sample="/015_contours.png"
+          sample="/015.png"
+          mask="/015_contours.png"
         />
 
         <TitledImageCard
           title="Pixel-level precision"
-          mask="/crack.png"
-          sample="/crack-mask.png"
+          sample="/crack.png"
+          mask="/crack-mask.png"
         />
 
         <TitledImageCard
           title="Overlapping object detection"
-          mask="/image-73.png"
-          sample="/image-73-mask.png"
+          sample="/image-73.png"
+          mask="/image-73-mask.png"
         />
         </div>
 
