@@ -40,7 +40,7 @@ const Service = () => {
     "Model training and optimization",
     "Inference pipeline development (Python scripts, Jupyter notebook, Graphical User Interfaces, etc)",
     "Comprehensive documentation",
-    "Optional video tutorial for implementation and usage",
+    "Optional online video tutorial session for implementation and usage",
   ];
 
   return (
