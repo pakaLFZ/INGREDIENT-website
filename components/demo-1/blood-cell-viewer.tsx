@@ -232,7 +232,7 @@ export function BloodCellViewer() {
       <img
         src="/image-4.png"
         alt="Blood cells"
-        className="absolute inset-0 w-full h-full object-contain rounded-[2.5%]"
+        className="absolute inset-0 w-full h-full object-contain rounded-[10px]"
       />
       <svg
         className="absolute inset-0 w-full h-full"
