@@ -39,6 +39,7 @@ const Service = () => {
     "Computer vision architecture design",
     "Model training and optimization",
     "Inference pipeline development (Python scripts, Jupyter notebook, Graphical User Interfaces, etc)",
+    "Local network server deployment (single-computer setup) supporting multi-device access with task management and authentication systems",
     "Comprehensive documentation",
     "Optional online video tutorial session for implementation and usage",
   ];
