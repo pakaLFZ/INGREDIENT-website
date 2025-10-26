@@ -25,13 +25,15 @@ function TypingWordRotate() {
   }, [])
 
   return (
-    <TypingAnimation
-      key={tools[index]}
-      className="font-bold leading-none"
-      duration={100}
-    >
-      {tools[index]}
-    </TypingAnimation>
+    <span className="inline-block min-w-[13ch]">
+      <TypingAnimation
+        key={tools[index]}
+        className="font-bold leading-none"
+        duration={100}
+      >
+        {tools[index]}
+      </TypingAnimation>
+    </span>
   )
 }
 

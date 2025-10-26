@@ -8,7 +8,7 @@ export function Strength() {
     <div className="max-w-[1000px] mx-auto w-full h-full px-4">
         <p className="text-white font-bold text-3xl mb-[20px]">We combat complexity</p>
 
-        <div className="flex flex-row flex-wrap justify-between gap-4">
+        <div className="flex flex-row flex-wrap justify-between md:justify-between justify-center gap-4">
 
           <TitledImageCard
           title="Complex sample identification"
