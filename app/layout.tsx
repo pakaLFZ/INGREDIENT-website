@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Comfortaa, Lato, Open_Sans } from "next/font/google";
+import { Providers } from "./providers";
 import "./globals.css";
 
 const comfortaa = Comfortaa({
@@ -35,7 +36,7 @@ export default function RootLayout({
       <body
         className={`${comfortaa.variable} ${lato.variable} ${openSans.variable} antialiased overflow-x-hidden`}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
