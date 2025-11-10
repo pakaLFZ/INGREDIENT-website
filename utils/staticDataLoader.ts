@@ -79,8 +79,7 @@ export interface ComprehensiveAnalysisResults {
 
 // Image numbers available in public/red-blood-cells-data
 const AVAILABLE_IMAGE_IDS = [
-  4, 33, 34, 37, 38, 43, 45, 46, 55, 62, 73, 78, 79, 86, 99, 100,
-  103, 104, 106, 117, 118, 120
+  4, 33, 37, 45, 62, 79, 100, 103, 104, 117
 ]
 
 export function getAvailableImages(): ImageData[] {

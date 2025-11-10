@@ -11,6 +11,7 @@ import { ImageMask } from "./types"
 interface ImagePreviewProps {
     selectedImage: ImageData | null
     edgeQualityMasks?: any[]
+    isProgressComplete?: boolean
 }
 
 /**
@@ -18,10 +19,12 @@ interface ImagePreviewProps {
  * Gets data directly from AnalysisSlice via Redux or from props
  * @param selectedImage - Currently selected image data
  * @param edgeQualityMasks - Optional masks passed as prop
+ * @param isProgressComplete - Whether the progress bar has finished loading
  */
 export function ImagePreview({
     selectedImage,
-    edgeQualityMasks: propMasks
+    edgeQualityMasks: propMasks,
+    isProgressComplete = true
 }: ImagePreviewProps) {
     const dispatch = useAppDispatch()
 
@@ -44,7 +47,8 @@ export function ImagePreview({
     const isAnalysisComplete = currentAnalysis?.taskStatus === 'completed' || currentAnalysis?.task?.status === 'done' || currentAnalysis?.task?.status === 'completed'
     const isComprehensive = currentAnalysis?.type === 'Comprehensive Analysis' && isAnalysisComplete
     const hasMaskData = edgeQualityMasks.length > 0
-    const shouldShowMaskControls = hasMaskData && (isComprehensive || !currentAnalysis)
+    const shouldShowMaskControls = hasMaskData && (isComprehensive || !currentAnalysis) && isProgressComplete
+    const shouldShowMasks = hasMaskData && isProgressComplete
 
     console.log('[ImagePreview] Debug:', {
         currentAnalysis,
@@ -54,6 +58,8 @@ export function ImagePreview({
         isComprehensive,
         hasMaskData,
         shouldShowMaskControls,
+        shouldShowMasks,
+        isProgressComplete,
         edgeQualityMasksLength: edgeQualityMasks.length,
         localMasksLength: localMasks.length
     })
@@ -97,7 +103,7 @@ export function ImagePreview({
                 selectedImage={selectedImage}
                 currentImageUrl={currentImageUrl}
                 masks={localMasks}
-                hasEdgeQualityMasks={hasMaskData}
+                hasEdgeQualityMasks={shouldShowMasks}
             />
 
             <ControlPanel

@@ -18,6 +18,9 @@ export default function AnalysisWorkbenchApp() {
     const [error, setError] = useState<string | null>(null)
     const [searchQuery, setSearchQuery] = useState("")
     const [sortBy, setSortBy] = useState("filename")
+    const [ignoreCache, setIgnoreCache] = useState(true)
+    const [fakeProgressToken, setFakeProgressToken] = useState<number | null>(null)
+    const [isProgressComplete, setIsProgressComplete] = useState(true)
 
     // Load images on mount
     useEffect(() => {
@@ -54,6 +57,17 @@ export default function AnalysisWorkbenchApp() {
 
     const handleImageSelect = useCallback((image: ImageData) => {
         setSelectedImage(image)
+        if (ignoreCache) {
+            setIsProgressComplete(false)
+            setFakeProgressToken(Date.now())
+        }
+    }, [ignoreCache])
+
+    const handleIgnoreCacheChange = useCallback((nextIgnoreCache: boolean) => {
+        setIgnoreCache(nextIgnoreCache)
+        if (!nextIgnoreCache) {
+            setFakeProgressToken(null)
+        }
     }, [])
 
     const handleSearchChange = useCallback((query: string) => {
@@ -62,6 +76,10 @@ export default function AnalysisWorkbenchApp() {
 
     const handleSortChange = useCallback((sort: string) => {
         setSortBy(sort)
+    }, [])
+
+    const handleProgressComplete = useCallback((isComplete: boolean) => {
+        setIsProgressComplete(isComplete)
     }, [])
 
     const filteredAndSortedImages = images
@@ -143,8 +161,8 @@ export default function AnalysisWorkbenchApp() {
                 onPageChange={() => {}}
                 onPerPageChange={() => {}}
                 onAnalyzeFolder={() => {}}
-                ignoreCache={false}
-                onIgnoreCacheChange={() => {}}
+                ignoreCache={ignoreCache}
+                onIgnoreCacheChange={handleIgnoreCacheChange}
                 disableFolderChange={true}
             />
 
@@ -160,12 +178,16 @@ export default function AnalysisWorkbenchApp() {
                             <ImagePreview
                                 selectedImage={selectedImage}
                                 edgeQualityMasks={edgeQualityMasks}
+                                isProgressComplete={isProgressComplete}
                             />
                         }
                         bottomPanel={
                             <AnalysisResults
                                 analysisResults={analysisResults}
                                 currentAnalysis={null}
+                                fakeProgressToken={fakeProgressToken}
+                                isProgressComplete={isProgressComplete}
+                                onProgressComplete={handleProgressComplete}
                             />
                         }
                         initialTopHeight={60}
