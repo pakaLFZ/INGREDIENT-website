@@ -21,6 +21,7 @@ function TypingWordRotate() {
   const [isFirstLoad, setIsFirstLoad] = useState(true)
   const [isReady, setIsReady] = useState(false)
   const GAP_OFFSET = 4
+  const CURSOR_WIDTH = 3
 
   useEffect(() => {
     const widthMap = calculateWordWidths(
@@ -42,11 +43,11 @@ function TypingWordRotate() {
     // Display first word with animation, then start rotation
     const initialTimeout = setTimeout(() => {
       setIsFirstLoad(false)
-      // Rotate to second word after ~3 seconds (allowing time for first word to type)
+      // Rotate to second word synchronized with blood cell viewer cycle (6500ms)
       firstRotateTimer = setTimeout(() => {
         rotate()
         rotationTimer = setInterval(rotate, 6500)
-      }, 3000)
+      }, 6500)
     }, 50)
 
     return () => {
@@ -62,7 +63,7 @@ function TypingWordRotate() {
 
   const fullWord = tools[index]
   const fullWidth = widthMap[fullWord] || 0
-  const adjustedWidth = Math.max(0, fullWidth - GAP_OFFSET)
+  const adjustedWidth = Math.max(0, fullWidth - GAP_OFFSET + CURSOR_WIDTH)
   const transition = isFirstLoad ? 'none' : 'width 0.5s ease-in-out'
 
   if (!isReady) {
