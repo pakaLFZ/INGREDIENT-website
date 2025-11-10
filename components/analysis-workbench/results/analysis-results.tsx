@@ -235,7 +235,7 @@ export function AnalysisResults({ analysisResults, currentAnalysis, fakeProgress
             <Progress value={Math.min(100, Math.round(progressiveValue || 0))} />
             <div className="text-[11px] text-gray-500">{progressDetails}</div>
           </div>
-          {status === 'error' && !fakeProgressState.active && errorMessage && (
+          {status === 'failed' && !fakeProgressState.active && errorMessage && (
             <div className="text-xs text-red-500 mt-1">{errorMessage}</div>
           )}
         </div>

@@ -3,8 +3,6 @@
 import * as React from "react"
 import { Label, Pie, PieChart } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-
 interface DefectData {
     name: string
     count: number
@@ -33,7 +31,7 @@ export function DefectDonutChart({ defects }: DefectDonutChartProps) {
                 color: defect.color || `var(--chart-${(index % 5) + 1})`
             }
         }), {} as Record<string, { label: string; color: string }>)
-    }, [defects]) satisfies ChartConfig
+    }, [defects])
 
     const chartData = React.useMemo(() =>
         defects.map(defect => ({
@@ -69,8 +67,7 @@ export function DefectDonutChart({ defects }: DefectDonutChartProps) {
                 <CardTitle className="text-base">Defect Distribution</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 pb-0">
-                <ChartContainer config={chartConfig} className="mx-auto aspect-[2/1] max-h-[250px]"
->
+                <div className="mx-auto aspect-[2/1] max-h-[250px]">
                     <PieChart>
                         <Pie
                             data={chartData}
@@ -85,7 +82,7 @@ export function DefectDonutChart({ defects }: DefectDonutChartProps) {
                            
                         </Pie>
                     </PieChart>
-                </ChartContainer>
+                </div>
             </CardContent>
         </Card>
     )

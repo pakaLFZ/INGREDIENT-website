@@ -110,7 +110,7 @@ const getImagesAPI = async (params: {
   page?: number;
   per_page?: number;
 } = {}): Promise<PaginatedImagesResponse> => {
-  return apiRequest('/api/images/list', {
+  return apiRequest<Omit<PaginatedImagesResponse, 'folder_path'>>('/api/images/list', {
     method: 'POST',
     body: JSON.stringify(params),
   }).then(response => ({
@@ -157,7 +157,7 @@ const initialState: ImageState = {
 
 export const loadImagesFromFolder = createAsyncThunk(
   'images/loadFromFolder',
-  async (params: { folderPath: string }, { rejectWithValue, getState }) => {
+  async (params: { folderPath: string; mode?: string; filenames?: string[] }, { rejectWithValue, getState }) => {
     try {
       const state = getState() as { images: ImageState }
       const imagesResponse = await getImagesAPI({

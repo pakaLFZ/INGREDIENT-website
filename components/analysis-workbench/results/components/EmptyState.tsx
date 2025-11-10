@@ -1,14 +1,10 @@
-import { Analysis } from '@/lib/store/types'
-
 interface EmptyStateProps {
-  currentAnalysis: Analysis | null
+  currentAnalysis: any | null
 }
 
 /**
  * Empty state component shown when no analysis is available or running
  * Displays appropriate message based on analysis state
- * 
- * @param currentAnalysis - Current analysis object or null if none exists
  */
 export function EmptyState({ currentAnalysis }: EmptyStateProps) {
   if (currentAnalysis) {

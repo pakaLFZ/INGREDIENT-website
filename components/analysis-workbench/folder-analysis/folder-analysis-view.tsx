@@ -78,11 +78,11 @@ export function FolderAnalysisView({ folderPath, ignoreCache, analysisRequestId,
 
     const renderContent = () => {
         if (!folderPath) {
-            return <EmptyState message="Select a folder to start analysis" />
+            return <EmptyState currentAnalysis={null} />
         }
 
         if (error) {
-            return <EmptyState message={`Error: ${error}`} />
+            return <div className="text-center py-8 text-red-500">{error}</div>
         }
 
         if (progress.status === 'initializing' || progress.status === 'analyzing') {
@@ -98,7 +98,7 @@ export function FolderAnalysisView({ folderPath, ignoreCache, analysisRequestId,
             return <FolderAnalysisResults results={results} sessionId={sessionId || undefined} />
         }
 
-        return <EmptyState message="Preparing folder analysis..." />
+        return <EmptyState currentAnalysis={null} />
     }
 
     return (
