@@ -19,11 +19,11 @@ const WorkFlow = ({ steps }: WorkFlowProps) => {
           <div key={item.step} className="relative flex gap-4 pb-8 last:pb-0">
             {/* Vertical line connecting circles */}
             {index !== steps.length - 1 && (
-              <div className="absolute left-4 top-8 bottom-0 w-0.5 bg-black" />
+              <div className="absolute left-3 top-6 bottom-0 w-0.5 bg-gray-300" />
             )}
 
             {/* Numbered circle */}
-            <div className="relative z-10 flex-shrink-0 w-8 h-8 rounded-full bg-black text-white flex items-center justify-center font-bold text-sm">
+            <div className="relative z-10 flex-shrink-0 w-6 h-6 rounded-full bg-white border border-gray-300 text-black flex items-center justify-center font-bold text-xs">
               {item.step}
             </div>
 

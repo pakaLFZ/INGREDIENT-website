@@ -45,7 +45,7 @@ const Service = () => {
   ];
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-4 py-8">
+    <div className="w-full max-w-3xl mx-auto px-4 py-16">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
         <WorkFlow steps={workSteps} />
         <WhatWeOffer offerings={offerings} />

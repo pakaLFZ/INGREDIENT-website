@@ -16,9 +16,9 @@ const WhatWeOffer = ({ offerings }: WhatWeOfferProps) => {
             key={index}
             className="flex gap-3 items-start text-sm text-gray-700 leading-relaxed"
           >
-            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-black flex items-center justify-center mt-0.5">
+            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center mt-0.5 flex-shrink-0">
               <svg
-                className="w-3 h-3 text-white"
+                className="w-3 h-3 text-black"
                 fill="none"
                 strokeLinecap="round"
                 strokeLinejoin="round"
