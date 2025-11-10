@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { TypingAnimation } from "@/components/ui/typing-animation"
 import { BloodCellViewer } from "@/components/demo-1/blood-cell-viewer"
 import { Button } from "@/components/ui/button"
+import { calculateWordWidths } from "@/lib/utils"
 
 const tools = [
   "affordable",
@@ -17,23 +18,17 @@ const tools = [
 function TypingWordRotate() {
   const [index, setIndex] = useState(0)
   const [widthMap, setWidthMap] = useState<Record<string, number>>({})
+  const [isFirstLoad, setIsFirstLoad] = useState(true)
+  const [isReady, setIsReady] = useState(false)
   const GAP_OFFSET = 4
 
   useEffect(() => {
-    const map: Record<string, number> = {}
-    tools.forEach((word) => {
-      for (let i = 1; i <= word.length; i++) {
-        const substr = word.substring(0, i)
-        const span = document.createElement('span')
-        span.className = 'font-bold leading-none text-[32px] md:text-[30px] lg:text-[30px]'
-        span.textContent = substr
-        span.style.visibility = 'hidden'
-        document.body.appendChild(span)
-        map[substr] = span.offsetWidth
-        document.body.removeChild(span)
-      }
-    })
-    setWidthMap(map)
+    const widthMap = calculateWordWidths(
+      tools,
+      'font-bold leading-none text-[32px] md:text-[30px] lg:text-[30px]'
+    )
+    setWidthMap(widthMap)
+    setIsReady(true)
   }, [])
 
   useEffect(() => {
@@ -42,15 +37,23 @@ function TypingWordRotate() {
     }
 
     let rotationTimer: NodeJS.Timeout | null = null
+    let firstRotateTimer: NodeJS.Timeout | null = null
 
-    // Rotate at 50ms offset to sync with blood cell box visibility
+    // Display first word with animation, then start rotation
     const initialTimeout = setTimeout(() => {
-      rotate()
-      rotationTimer = setInterval(rotate, 6500)
+      setIsFirstLoad(false)
+      // Rotate to second word after ~3 seconds (allowing time for first word to type)
+      firstRotateTimer = setTimeout(() => {
+        rotate()
+        rotationTimer = setInterval(rotate, 6500)
+      }, 3000)
     }, 50)
 
     return () => {
       clearTimeout(initialTimeout)
+      if (firstRotateTimer) {
+        clearTimeout(firstRotateTimer)
+      }
       if (rotationTimer) {
         clearInterval(rotationTimer)
       }
@@ -60,9 +63,14 @@ function TypingWordRotate() {
   const fullWord = tools[index]
   const fullWidth = widthMap[fullWord] || 0
   const adjustedWidth = Math.max(0, fullWidth - GAP_OFFSET)
+  const transition = isFirstLoad ? 'none' : 'width 0.5s ease-in-out'
+
+  if (!isReady) {
+    return <span style={{ display: 'inline-block', width: '0px', overflow: 'hidden' }} />
+  }
 
   return (
-    <span style={{ display: 'inline-block', width: `${adjustedWidth}px`, overflow: 'hidden', transition: 'width 0.5s ease-in-out' }}>
+    <span style={{ display: 'inline-block', width: `${adjustedWidth}px`, overflow: 'hidden', transition }}>
       <TypingAnimation
         key={fullWord}
         className="font-bold leading-none"
