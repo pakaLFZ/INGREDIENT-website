@@ -68,8 +68,8 @@ export function FilePanel({
     disableFolderChange = false
 }: FilePanelProps) {
     return (
-        <ResizablePanel defaultWidth={350} minWidth={200} maxWidth={600}>
-            <div className="h-screen bg-muted/30 border-r flex flex-col overflow-hidden">
+        <ResizablePanel defaultWidth={280} minWidth={100} maxWidth={600}>
+            <div className="h-full bg-muted/30 border-r flex flex-col overflow-hidden">
                 <div className="flex-none p-2">
                     <FolderSelector
                         folderPath={folderPath}

@@ -163,7 +163,7 @@ export default function AnalysisWorkbenchApp() {
     }
 
     return (
-        <div className="flex h-screen bg-white overflow-hidden touch-manipulation">
+        <div className="flex h-full w-full bg-white overflow-hidden touch-manipulation">
             <FilePanel
                 folderPath={fixedFolderPath}
                 selectedImage={selectedImage}
