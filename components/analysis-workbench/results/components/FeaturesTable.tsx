@@ -42,19 +42,18 @@ export function FeaturesTable({ features, title }: FeaturesTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[200px]">Feature</TableHead>
-            <TableHead>Description</TableHead>
+            <TableHead>Feature</TableHead>
             <TableHead className="text-right w-[120px]">Value</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {features.map((feature, index) => (
             <TableRow key={index}>
-              <TableCell className="font-medium text-sm">
-                {feature.name}
-              </TableCell>
-              <TableCell className="text-sm text-gray-600">
-                {feature.description}
+              <TableCell>
+                <div className="font-medium text-sm">{feature.name}</div>
+                <div className="text-xs text-gray-600 mt-1">
+                  {feature.description}
+                </div>
               </TableCell>
               <TableCell className="text-right text-sm font-mono">
                 {typeof feature.value === 'number'

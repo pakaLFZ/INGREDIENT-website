@@ -25,7 +25,7 @@ const DemoRBC = () => {
           </p>
 
           {/* Demo Container */}
-          <div className="relative rounded border border-gray-700 overflow-hidden bg-white max-w-4xl">
+          <div className="relative rounded border border-gray-700 overflow-hidden bg-white max-w-7xl">
 
             {/* Workbench App Container */}
             <div className="w-full h-[500px]">
