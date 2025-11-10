@@ -133,7 +133,38 @@ export function getImageFileUrl(imageId: number): string {
  *   - aspect_ratio, solidity, extent: Shape descriptors
  *   - point_count: Number of points defining the contour boundary
  */
+const CACHE_KEY = 'folder_analysis_cache'
+
+interface AnalysisCacheData {
+  [imageId: number]: ComprehensiveAnalysisResults
+}
+
+function getCache(): AnalysisCacheData {
+  if (typeof window === 'undefined') return {}
+  try {
+    const cached = localStorage.getItem(CACHE_KEY)
+    return cached ? JSON.parse(cached) : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveCache(data: AnalysisCacheData): void {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data))
+  } catch (err) {
+    console.error('Failed to save analysis cache:', err)
+  }
+}
+
 export async function loadAnalysisResults(imageId: number): Promise<ComprehensiveAnalysisResults> {
+  const cache = getCache()
+
+  if (cache[imageId]) {
+    return cache[imageId]
+  }
+
   try {
     const response = await fetch(`/red-blood-cells-data/image-${imageId}_contours.json`)
     if (!response.ok) {
@@ -142,6 +173,8 @@ export async function loadAnalysisResults(imageId: number): Promise<Comprehensiv
 
     const rawData = await response.json()
     if (isComprehensiveResult(rawData)) {
+      cache[imageId] = rawData
+      saveCache(cache)
       return rawData
     }
 
@@ -174,7 +207,7 @@ export async function loadAnalysisResults(imageId: number): Promise<Comprehensiv
       { name: "RBC Shape Dev", description: "Average deviation of RBC shape from a perfect circle", value: roundTo(rbcShapeDeviation, 4) }
     ]
 
-    return {
+    const result: ComprehensiveAnalysisResults = {
       task_id: `task-${imageId}-${Date.now()}`,
       task_type: "comprehensive_analysis",
       image_id: imageId,
@@ -184,6 +217,10 @@ export async function loadAnalysisResults(imageId: number): Promise<Comprehensiv
       features,
       completed_at: new Date().toISOString()
     }
+
+    cache[imageId] = result
+    saveCache(cache)
+    return result
   } catch (error) {
     console.error(`Error loading analysis for image ${imageId}:`, error)
     throw error

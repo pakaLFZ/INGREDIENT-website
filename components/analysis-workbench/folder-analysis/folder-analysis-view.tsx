@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
-import { FOLDER_ANALYSIS_API_BASE, useFolderAnalysis } from "@/utils/hooks/useFolderAnalysis"
+import { useFolderAnalysis } from "@/utils/hooks/useFolderAnalysis"
 import { FolderAnalysisProgress } from "./folder-analysis-progress"
 import { FolderAnalysisResults } from "./folder-analysis-results"
 import { EmptyState } from "../results"
@@ -11,6 +11,7 @@ import { EmptyState } from "../results"
 interface FolderAnalysisViewProps {
     folderPath: string | null
     ignoreCache?: boolean
+    analysisRequestId?: number
     onBack?: () => void
     onAnalysisComplete?: () => void
 }
@@ -21,18 +22,30 @@ interface FolderAnalysisViewProps {
  * Shows progress during analysis and results when complete
  * Includes protection against React Strict Mode double-mounting
  */
-export function FolderAnalysisView({ folderPath, ignoreCache, onBack, onAnalysisComplete }: FolderAnalysisViewProps) {
-    const { sessionId, progress, results, error, startAnalysis, cleanup } = useFolderAnalysis()
+export function FolderAnalysisView({ folderPath, ignoreCache, analysisRequestId, onBack, onAnalysisComplete }: FolderAnalysisViewProps) {
+    const { sessionId, progress, results, error, startAnalysis, cleanup, forceComplete } = useFolderAnalysis()
     const lastFolderPathRef = useRef<string | null>(null)
     const lastIgnoreCacheRef = useRef<boolean | undefined>(undefined)
+    const lastRequestIdRef = useRef<number | null>(null)
 
     useEffect(() => {
-        if (folderPath && (folderPath !== lastFolderPathRef.current || ignoreCache !== lastIgnoreCacheRef.current) && progress.status === 'idle') {
+        const readyForNewRun = progress.status === 'idle' || progress.status === 'completed' || progress.status === 'error'
+        const shouldStart =
+            folderPath &&
+            readyForNewRun &&
+            (
+                folderPath !== lastFolderPathRef.current ||
+                ignoreCache !== lastIgnoreCacheRef.current ||
+                (analysisRequestId ?? null) !== lastRequestIdRef.current
+            )
+
+        if (shouldStart) {
             lastFolderPathRef.current = folderPath
             lastIgnoreCacheRef.current = ignoreCache
+            lastRequestIdRef.current = analysisRequestId ?? null
             startAnalysis(folderPath, ignoreCache)
         }
-    }, [folderPath, ignoreCache, startAnalysis, progress.status])
+    }, [folderPath, ignoreCache, analysisRequestId, startAnalysis, progress.status])
 
     useEffect(() => {
         if ((progress.status === 'completed' || error) && onAnalysisComplete) {
@@ -47,12 +60,9 @@ export function FolderAnalysisView({ folderPath, ignoreCache, onBack, onAnalysis
     }, [cleanup])
 
     const handleDownload = async () => {
-        if (!sessionId) return
+        if (!sessionId || !results) return
         try {
-            const response = await fetch(`${FOLDER_ANALYSIS_API_BASE}/result/${sessionId}/`)
-            if (!response.ok) throw new Error('Failed to download results')
-            const data = await response.json()
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+            const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' })
             const url = URL.createObjectURL(blob)
             const a = document.createElement('a')
             a.href = url
@@ -76,7 +86,12 @@ export function FolderAnalysisView({ folderPath, ignoreCache, onBack, onAnalysis
         }
 
         if (progress.status === 'initializing' || progress.status === 'analyzing') {
-            return <FolderAnalysisProgress progress={progress} />
+            return (
+                <FolderAnalysisProgress
+                    progress={progress}
+                    onAnimationComplete={forceComplete}
+                />
+            )
         }
 
         if (progress.status === 'completed' && results) {

@@ -1,8 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
-
-const RAW_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
-export const ANALYSIS_SERVICE_BASE_URL = RAW_BACKEND_URL.replace(/\/+$/, '')
-export const FOLDER_ANALYSIS_API_BASE = `${ANALYSIS_SERVICE_BASE_URL}/api/analysis/folder`
+import { PRECOMPUTED_ANALYSIS_RESULTS } from '@/utils/analysisResultsData'
 
 interface FolderAnalysisProgress {
     status: 'idle' | 'initializing' | 'analyzing' | 'completed' | 'error'
@@ -17,133 +14,168 @@ interface FolderAnalysisProgress {
     errors: (string | { message?: string; timestamp?: string; image_path?: string })[]
 }
 
-interface DefectData {
-    name: string
-    count: number
-    area: number
-    images: number
-    color?: string
+interface ImageCellMetrics {
+    image_id: number
+    filename: string
+    rbc_count: number
+    wbc_count: number
+    total_cells: number
+    avg_rbc_area: number
+    avg_wbc_area: number
+    avg_rbc_shape_dev: number
 }
 
-interface FolderAnalysisResults {
-    defects: DefectData[]
-    defect_statistics: Record<string, any>
-    quality_metrics: Record<string, any>
-    processing_summary: Record<string, any>
+interface AggregatedMetrics {
+    total_images: number
+    total_rbc: number
+    total_wbc: number
+    total_cells: number
+    avg_rbc_area: number
+    avg_wbc_area: number
+    avg_rbc_shape_dev: number
 }
+
+interface ProcessingSummary {
+    folder_path: string
+    ignore_cache: boolean
+    analyzed_at: string
+    duration_seconds: number
+    total_images: number
+}
+
+export interface FolderAnalysisResultsData {
+    aggregated_metrics: AggregatedMetrics
+    per_image_metrics: ImageCellMetrics[]
+    processing_summary: ProcessingSummary
+}
+
+const DEFAULT_PROGRESS: FolderAnalysisProgress = {
+    status: 'idle',
+    progress_percentage: 0,
+    current_step: '',
+    total_images: 0,
+    processed_images: 0,
+    cached_images: 0,
+    failed_images: 0,
+    errors: []
+}
+
+
+const ANIMATION_DURATION_MS = 10000
 
 /**
- * Hook for managing folder analysis state and API calls
- * Handles progress tracking, results fetching, and error management
- * Includes protection against duplicate calls from React Strict Mode
+ * Hook for managing folder analysis state using static data
+ * Simulates progress updates and produces an aggregate report of cell metrics
  */
 export function useFolderAnalysis() {
     const [sessionId, setSessionId] = useState<string | null>(null)
     const [taskId, setTaskId] = useState<string | null>(null)
-    const [progress, setProgress] = useState<FolderAnalysisProgress>({
-        status: 'idle',
-        progress_percentage: 0,
-        current_step: '',
-        total_images: 0,
-        processed_images: 0,
-        cached_images: 0,
-        failed_images: 0,
-        errors: []
-    })
-    const [results, setResults] = useState<FolderAnalysisResults | null>(null)
+    const [progress, setProgress] = useState<FolderAnalysisProgress>(DEFAULT_PROGRESS)
+    const [results, setResults] = useState<FolderAnalysisResultsData | null>(null)
     const [error, setError] = useState<string | null>(null)
-    const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+    const lastFolderPathRef = useRef<string | null>(null)
+    const lastIgnoreCacheRef = useRef<boolean>(false)
 
-    // Fetch final results
-    const fetchResults = useCallback(async (id: string) => {
-        try {
-            const response = await fetch(`${FOLDER_ANALYSIS_API_BASE}/result/${id}/`)
-            if (!response.ok) throw new Error('Failed to get results')
+    const finalizeAnalysis = useCallback((folderPath: string, ignoreCache: boolean) => {
+        const totalImages = PRECOMPUTED_ANALYSIS_RESULTS.aggregated_metrics.total_images
 
-            const data = await response.json()
-            console.log('Raw API response:', data)
-            const defectAnalysis = data.results?.defect_analysis || data.defect_analysis || {}
-            const extractedResults = {
-                defects: defectAnalysis.defects || [],
-                defect_statistics: defectAnalysis.defect_summary?.defect_statistics || {},
-                quality_metrics: defectAnalysis.average_metrics || {},
-                processing_summary: defectAnalysis.processing_summary || {}
-            }
-            console.log('Extracted results:', extractedResults)
-            setResults(extractedResults)
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to get results')
+        const updatedSummary: ProcessingSummary = {
+            folder_path: folderPath,
+            ignore_cache: ignoreCache,
+            analyzed_at: new Date().toISOString(),
+            duration_seconds: ANIMATION_DURATION_MS / 1000,
+            total_images: totalImages
         }
+
+        setResults({
+            aggregated_metrics: PRECOMPUTED_ANALYSIS_RESULTS.aggregated_metrics,
+            per_image_metrics: PRECOMPUTED_ANALYSIS_RESULTS.per_image_metrics,
+            processing_summary: updatedSummary
+        })
+
+        setProgress(prev => {
+            if (prev.status === 'completed') {
+                return prev
+            }
+
+            return {
+                status: 'completed',
+                progress_percentage: 100,
+                current_step: 'Folder analysis complete',
+                total_images: totalImages,
+                processed_images: totalImages,
+                cached_images: ignoreCache ? 0 : totalImages,
+                failed_images: 0,
+                estimated_completion: Date.now(),
+                errors: []
+            }
+        })
     }, [])
 
-    // Poll progress updates
-    const pollProgress = useCallback(async (id: string) => {
-        try {
-            const response = await fetch(`${FOLDER_ANALYSIS_API_BASE}/progress/${id}/`)
-            if (!response.ok) throw new Error('Failed to get progress')
-
-            const data = await response.json()
-
-            const progressData = data.progress || data
-            console.log('Progress status:', progressData.status, progressData)
-            setProgress(progressData)
-
-            if (progressData.status === 'completed') {
-                console.log('Analysis completed, fetching results...')
-                await fetchResults(id)
-            } else if (progressData.status === 'initializing' || progressData.status === 'analyzing') {
-                pollingTimeoutRef.current = setTimeout(() => pollProgress(id), 1000)
-            }
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to track progress')
-            setProgress(prev => ({ ...prev, status: 'error' }))
+    const scheduleAutoComplete = useCallback((folderPath: string, ignoreCache: boolean) => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current)
         }
-    }, [fetchResults])
 
-    // Start folder analysis
-    const startAnalysis = useCallback(async (folderPath: string, ignoreCache?: boolean) => {
+        timeoutRef.current = setTimeout(() => {
+            timeoutRef.current = null
+            finalizeAnalysis(folderPath, ignoreCache)
+        }, ANIMATION_DURATION_MS)
+    }, [finalizeAnalysis])
+
+    const startAnalysis = useCallback((folderPath: string, ignoreCache: boolean = false) => {
         try {
             setError(null)
+            setResults(null)
+            lastFolderPathRef.current = folderPath
+            lastIgnoreCacheRef.current = ignoreCache
+
+            const analysisSessionId = `session-${Date.now()}`
+            const analysisTaskId = `task-${analysisSessionId}`
+
+            setSessionId(analysisSessionId)
+            setTaskId(analysisTaskId)
+
+            const totalImages = PRECOMPUTED_ANALYSIS_RESULTS.aggregated_metrics.total_images
+            const firstImage = PRECOMPUTED_ANALYSIS_RESULTS.per_image_metrics[0]?.filename
+
             setProgress({
-                status: 'initializing',
+                status: 'analyzing',
                 progress_percentage: 0,
-                current_step: 'Starting analysis...',
-                total_images: 0,
+                current_step: firstImage ? `Processing ${firstImage}` : `Starting analysis of ${totalImages} images...`,
+                total_images: totalImages,
                 processed_images: 0,
-                cached_images: 0,
+                cached_images: ignoreCache ? 0 : totalImages,
                 failed_images: 0,
+                estimated_completion: Date.now() + ANIMATION_DURATION_MS,
                 errors: []
             })
 
-            const response = await fetch(`${FOLDER_ANALYSIS_API_BASE}/start`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    folder_path: folderPath,
-                    skip_cache: ignoreCache,
-                    note: 'Folder analysis request'
-                })
-            })
-
-            if (!response.ok) throw new Error('Failed to start analysis')
-
-            const data = await response.json()
-            setTaskId(data.task_id)
-            setSessionId(data.session_id)
-
-            pollProgress(data.session_id)
+            scheduleAutoComplete(folderPath, ignoreCache)
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Unknown error')
+            setError(err instanceof Error ? err.message : 'Failed to analyze folder')
             setProgress(prev => ({ ...prev, status: 'error' }))
         }
-    }, [pollProgress])
+    }, [scheduleAutoComplete])
+
+    const forceComplete = useCallback(() => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current)
+            timeoutRef.current = null
+        }
+
+        const folderPath = lastFolderPathRef.current ?? PRECOMPUTED_ANALYSIS_RESULTS.processing_summary.folder_path
+        const ignoreCache = lastIgnoreCacheRef.current
+        finalizeAnalysis(folderPath, ignoreCache)
+    }, [finalizeAnalysis])
 
     const clearError = useCallback(() => setError(null), [])
 
     const cleanup = useCallback(() => {
-        if (pollingTimeoutRef.current) {
-            clearTimeout(pollingTimeoutRef.current)
-            pollingTimeoutRef.current = null
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current)
+            timeoutRef.current = null
         }
     }, [])
 
@@ -154,6 +186,7 @@ export function useFolderAnalysis() {
         results,
         error,
         startAnalysis,
+        forceComplete,
         clearError,
         cleanup
     }

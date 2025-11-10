@@ -28,7 +28,7 @@ interface FilePanelProps {
     onSortChange: (sortBy: string) => void
     onPageChange: (page: number) => void
     onPerPageChange: (perPage: number) => void
-    onAnalyzeFolder?: () => void
+    onAnalyzeFolder?: (ignoreCache?: boolean) => void
     ignoreCache?: boolean
     onIgnoreCacheChange?: (ignoreCache: boolean) => void
     disableFolderChange?: boolean

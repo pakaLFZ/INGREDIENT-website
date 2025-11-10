@@ -2,7 +2,8 @@
 
 import { Progress } from "@/components/ui/progress"
 import { Loader2, AlertCircle } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { PRECOMPUTED_ANALYSIS_RESULTS } from "@/utils/analysisResultsData"
 
 interface FolderAnalysisProgressProps {
     progress: {
@@ -17,38 +18,89 @@ interface FolderAnalysisProgressProps {
         estimated_completion?: number | null
         errors: (string | { message?: string; timestamp?: string; image_path?: string })[]
     }
+    onAnimationComplete?: () => void
 }
 
 /**
  * Displays folder analysis progress centered in full component space
  * Shows processed/total images, timing stats, and current state
  */
-export function FolderAnalysisProgress({ progress }: FolderAnalysisProgressProps) {
-    const { status, progress_percentage, current_step, total_images, processed_images, start_time, estimated_completion, errors } = progress
-    const [elapsedTime, setElapsedTime] = useState(0)
+export function FolderAnalysisProgress({ progress, onAnimationComplete }: FolderAnalysisProgressProps) {
+    const { status, progress_percentage, current_step, total_images, processed_images, errors } = progress
+    const fallbackTotal = total_images || PRECOMPUTED_ANALYSIS_RESULTS.aggregated_metrics.total_images
+    const imageQueue = useMemo(() => {
+        if (PRECOMPUTED_ANALYSIS_RESULTS.per_image_metrics?.length) {
+            return PRECOMPUTED_ANALYSIS_RESULTS.per_image_metrics.map(metric => metric.filename)
+        }
+
+        return Array.from({ length: fallbackTotal }, (_, idx) => `image-${idx + 1}.png`)
+    }, [fallbackTotal])
+
+    const [displayedImages, setDisplayedImages] = useState(processed_images)
+    const [displayProgress, setDisplayProgress] = useState(progress_percentage)
+    const completionNotifiedRef = useRef(false)
+    const totalForAnimation = imageQueue.length || fallbackTotal || 1
+    const totalDisplayCount = total_images || totalForAnimation
+    const isAnimating = status === 'initializing' || status === 'analyzing'
+    const currentImageIndex = Math.min(Math.max(displayedImages - 1, 0), imageQueue.length - 1)
+    const currentImageName = imageQueue[currentImageIndex] || current_step
+    const currentStateText = status === 'completed'
+        ? 'Folder analysis complete'
+        : `Processing ${currentImageName || 'images'} (${Math.min(displayedImages + 1, totalDisplayCount)} of ${totalDisplayCount})`
+
+    // Keep local counters in sync with incoming progress while never regressing.
+    useEffect(() => {
+        setDisplayedImages(prev => {
+            if (status === 'idle') return 0
+            if (status === 'completed') return totalForAnimation
+            if (processed_images > prev) return processed_images
+            return Math.min(prev, totalForAnimation)
+        })
+    }, [processed_images, status, totalForAnimation])
 
     useEffect(() => {
-        if (!start_time || status === 'idle' || status === 'completed') return
+        setDisplayProgress(prev => {
+            if (status === 'completed') return 100
+            if (status === 'idle') return 0
+            if (progress_percentage > prev) return progress_percentage
+            const derived = (displayedImages / totalForAnimation) * 100
+            return derived > prev ? derived : prev
+        })
+    }, [progress_percentage, status, displayedImages, totalForAnimation])
+
+    useEffect(() => {
+        if (!isAnimating) return
 
         const interval = setInterval(() => {
-            setElapsedTime(Date.now() / 1000 - start_time)
-        }, 100)
+            setDisplayedImages(prev => {
+                if (prev >= totalForAnimation) {
+                    return prev
+                }
+
+                return prev + 1
+            })
+        }, 250)
 
         return () => clearInterval(interval)
-    }, [start_time, status])
+    }, [isAnimating, totalForAnimation])
+
+    useEffect(() => {
+        if (!isAnimating) {
+            completionNotifiedRef.current = false
+            return
+        }
+
+        if (displayedImages >= totalForAnimation && !completionNotifiedRef.current) {
+            completionNotifiedRef.current = true
+            onAnimationComplete?.()
+        }
+    }, [displayedImages, totalForAnimation, isAnimating, onAnimationComplete])
+
+    useEffect(() => {
+        console.log('Progress updated:', { status, progress_percentage, current_step, processed_images, total_images })
+    }, [status, progress_percentage, current_step, processed_images, total_images])
 
     if (status === 'idle') return null
-
-    const timePerItem = processed_images > 0 ? elapsedTime / processed_images : 0
-    const remainingItems = total_images - processed_images
-    const estimatedTimeNeeded = remainingItems * timePerItem
-
-    const formatTime = (seconds: number) => {
-        if (seconds < 60) return `${seconds.toFixed(1)}s`
-        const mins = Math.floor(seconds / 60)
-        const secs = Math.floor(seconds % 60)
-        return `${mins}m ${secs}s`
-    }
 
     return (
         <div className="h-full w-full flex items-center justify-center p-8">
@@ -59,37 +111,24 @@ export function FolderAnalysisProgress({ progress }: FolderAnalysisProgressProps
                 </div>
 
                 <div className="space-y-2">
-                    <Progress value={progress_percentage} className="h-2" />
+                    <Progress value={displayProgress} className="h-2" />
                     <div className="text-center text-sm text-muted-foreground">
-                        {progress_percentage.toFixed(1)}%
+                        {displayProgress.toFixed(1)}%
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                    <div className="space-y-1">
+                <div className="grid grid-cols-1 gap-4 text-sm">
+                    <div className="space-y-1 text-center">
                         <div className="text-muted-foreground">Processed Images</div>
-                        <div className="font-medium text-lg">{processed_images} / {total_images}</div>
+                        <div className="font-medium text-lg">
+                            {Math.min(displayedImages, totalDisplayCount)} / {totalDisplayCount}
+                        </div>
                     </div>
 
-                    <div className="space-y-1">
-                        <div className="text-muted-foreground">Time per Item</div>
-                        <div className="font-medium text-lg">{formatTime(timePerItem)}</div>
+                    <div className="text-center pt-2 space-y-1">
+                        <div className="text-muted-foreground text-sm">Current State</div>
+                        <div className="font-medium">{currentStateText}</div>
                     </div>
-
-                    <div className="space-y-1">
-                        <div className="text-muted-foreground">Elapsed Time</div>
-                        <div className="font-medium text-lg">{formatTime(elapsedTime)}</div>
-                    </div>
-
-                    <div className="space-y-1">
-                        <div className="text-muted-foreground">Time Needed</div>
-                        <div className="font-medium text-lg">{formatTime(estimatedTimeNeeded)}</div>
-                    </div>
-                </div>
-
-                <div className="text-center pt-2">
-                    <div className="text-muted-foreground text-sm">Current State</div>
-                    <div className="font-medium mt-1">{current_step}</div>
                 </div>
 
                 {errors.length > 0 && (

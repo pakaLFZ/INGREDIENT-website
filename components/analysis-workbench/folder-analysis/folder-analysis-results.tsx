@@ -1,142 +1,96 @@
 "use client"
 
-import * as React from "react"
-import { Label, Pie, PieChart } from "recharts"
-import { ChartConfig, ChartContainer } from "@/components/ui/chart"
 import { MetricRow } from "../results"
-import { DefectStatisticsDetail } from "./defect-statistics-detail"
-
-interface DefectData {
-    name: string
-    count: number
-    area: number
-    images: number
-    color?: string
-}
+import type { FolderAnalysisResultsData } from "@/utils/hooks/useFolderAnalysis"
 
 interface FolderAnalysisResultsProps {
-    results: {
-        defects?: DefectData[]
-        defect_statistics?: Record<string, any>
-        quality_metrics?: Record<string, any>
-        processing_summary?: Record<string, any>
-    }
+    results: FolderAnalysisResultsData
     sessionId?: string
 }
 
-const formatValue = (value: any): string => {
-    if (typeof value === 'number') return value.toFixed(3)
-    if (typeof value === 'object' && value !== null) return JSON.stringify(value, null, 2)
-    return String(value)
-}
+const formatNumber = (value: number, digits = 0) =>
+    Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: digits })
 
-const formatLabel = (key: string): string => {
-    return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-}
+const formatArea = (value: number) => `${formatNumber(value, 2)} px²`
+const formatDeviation = (value: number) => formatNumber(value, 4)
 
-/**
- * Displays folder analysis results with merged defect chart and quality metrics
- * Shows defect distribution chart with quality metrics, defect statistics, and processing summary
- * @param results - Analysis results containing defects, statistics, quality metrics, and processing summary
- * @param sessionId - Session ID for downloading raw results data
- */
-export function FolderAnalysisResults({ results, sessionId }: FolderAnalysisResultsProps) {
-    const { defects, defect_statistics, quality_metrics, processing_summary } = results
+const MetricCard = ({ label, value, helper }: { label: string; value: string; helper?: string }) => (
+    <div className="rounded-lg border bg-muted/30 p-3">
+        <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
+        <p className="text-lg font-semibold">{value}</p>
+        {helper && <p className="text-xs text-muted-foreground">{helper}</p>}
+    </div>
+)
 
-    const chartConfig = React.useMemo(() => {
-        if (!defects) return {} as ChartConfig
-        return defects.reduce((config, defect, index) => ({
-            ...config,
-            [defect.name]: {
-                label: defect.name.charAt(0).toUpperCase() + defect.name.slice(1),
-                color: defect.color || `var(--chart-${(index % 5) + 1})`
-            }
-        }), {} as Record<string, { label: string; color: string }>)
-    }, [defects]) satisfies ChartConfig
-
-    const chartData = React.useMemo(() =>
-        defects?.map(defect => ({
-            ...defect,
-            fill: chartConfig[defect.name]?.color || `var(--chart-1)`
-        })) || [], [defects, chartConfig])
-
-    const renderLabel = (props: any) => {
-        const { cx, cy, midAngle, outerRadius, name, percent } = props
-        const RADIAN = Math.PI / 180
-        const radius = outerRadius + 10 + Math.max(0, name.length * 2)
-        const x = cx + radius * Math.cos(-midAngle * RADIAN)
-        const y = cy + radius * Math.sin(-midAngle * RADIAN)
-        const textAnchor = x > cx ? "start" : "end"
-
-        return (
-            <text
-                x={x}
-                y={y}
-                fill="hsl(var(--foreground))"
-                textAnchor={textAnchor}
-                dominantBaseline="central"
-                className="text-xs font-medium"
-            >
-                {`${name} ${(percent * 100).toFixed(0)}%`}
-            </text>
-        )
-    }
+export function FolderAnalysisResults({ results }: FolderAnalysisResultsProps) {
+    const { aggregated_metrics, per_image_metrics, processing_summary } = results
 
     return (
         <div className="space-y-4 p-4">
-            {defects && defects.length > 0 && quality_metrics && (
-                <div className="border rounded-lg bg-background">
-                    <div className="p-4 border-b">
-                        <h3 className="text-base font-medium">Defect Distribution & Quality Metrics</h3>
-                    </div>
-                    <div className="grid lg:grid-cols-2 gap-6 p-6">
-                        <div className="flex flex-col items-center justify-center">
-                            <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[250px] w-full">
-                                <PieChart>
-                                    <Pie
-                                        data={chartData}
-                                        dataKey="count"
-                                        nameKey="name"
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        strokeWidth={5}
-                                        label={renderLabel}
-                                        labelLine={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1 }}
-                                    />
-                                </PieChart>
-                            </ChartContainer>
-                        </div>
-                        <div className="space-y-2">
-                            {Object.entries(quality_metrics).map(([key, value]) => (
-                                <MetricRow
-                                    key={key}
-                                    label={formatLabel(key)}
-                                    value={formatValue(value)}
-                                />
+            <div className="border rounded-lg bg-background">
+                <div className="p-4 border-b">
+                    <h3 className="text-base font-medium">Overall Cell Summary</h3>
+                    <p className="text-xs text-muted-foreground">
+                        Aggregated from {aggregated_metrics.total_images} images in the selected folder.
+                    </p>
+                </div>
+                <div className="grid gap-4 p-4 md:grid-cols-3">
+                    <MetricCard label="Total RBCs" value={formatNumber(aggregated_metrics.total_rbc)} helper="All detected red blood cells" />
+                    <MetricCard label="Total WBCs" value={formatNumber(aggregated_metrics.total_wbc)} helper="All detected white blood cells" />
+                    <MetricCard label="Total Cells" value={formatNumber(aggregated_metrics.total_cells)} helper="Combined RBC + WBC count" />
+                    <MetricCard label="Avg RBC Area" value={formatArea(aggregated_metrics.avg_rbc_area)} helper="Weighted average size" />
+                    <MetricCard label="Avg WBC Area" value={formatArea(aggregated_metrics.avg_wbc_area)} helper="Weighted average size" />
+                    <MetricCard label="Avg RBC Shape Deviation" value={formatDeviation(aggregated_metrics.avg_rbc_shape_dev)} helper="0 = perfect circle" />
+                </div>
+            </div>
+
+            <div className="border rounded-lg bg-background">
+                <div className="p-4 border-b">
+                    <h3 className="text-base font-medium">Per-Image Metrics</h3>
+                    <p className="text-xs text-muted-foreground">Detailed breakdown for each analyzed sample.</p>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                        <thead>
+                            <tr className="text-xs uppercase tracking-wide text-muted-foreground text-left border-b">
+                                <th className="px-4 py-2 font-medium">Image</th>
+                                <th className="px-4 py-2 font-medium">RBCs</th>
+                                <th className="px-4 py-2 font-medium">WBCs</th>
+                                <th className="px-4 py-2 font-medium">Total</th>
+                                <th className="px-4 py-2 font-medium">Avg RBC Area</th>
+                                <th className="px-4 py-2 font-medium">Avg WBC Area</th>
+                                <th className="px-4 py-2 font-medium">Avg RBC Shape Dev</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {per_image_metrics.map(metric => (
+                                <tr key={metric.image_id} className="border-b last:border-0">
+                                    <td className="px-4 py-3 font-medium">{metric.filename}</td>
+                                    <td className="px-4 py-3">{formatNumber(metric.rbc_count)}</td>
+                                    <td className="px-4 py-3">{formatNumber(metric.wbc_count)}</td>
+                                    <td className="px-4 py-3">{formatNumber(metric.total_cells)}</td>
+                                    <td className="px-4 py-3">{formatArea(metric.avg_rbc_area)}</td>
+                                    <td className="px-4 py-3">{formatArea(metric.avg_wbc_area)}</td>
+                                    <td className="px-4 py-3">{formatDeviation(metric.avg_rbc_shape_dev)}</td>
+                                </tr>
                             ))}
-                        </div>
-                    </div>
+                        </tbody>
+                    </table>
                 </div>
-            )}
+            </div>
 
-            {defect_statistics && <DefectStatisticsDetail statistics={defect_statistics} />}
-
-            {processing_summary && (
-                <div className="border rounded-lg bg-background">
-                    <div className="p-4 border-b">
-                        <h3 className="text-base font-medium">Processing Summary</h3>
-                    </div>
-                    <div className="p-4 space-y-2">
-                        {Object.entries(processing_summary).map(([key, value]) => (
-                            <MetricRow
-                                key={key}
-                                label={formatLabel(key)}
-                                value={formatValue(value)}
-                            />
-                        ))}
-                    </div>
+            <div className="border rounded-lg bg-background">
+                <div className="p-4 border-b">
+                    <h3 className="text-base font-medium">Processing Summary</h3>
                 </div>
-            )}
+                <div className="p-4 space-y-2">
+                    <MetricRow label="Folder Path" value={processing_summary.folder_path || 'N/A'} />
+                    <MetricRow label="Ignore Cache" value={processing_summary.ignore_cache ? 'Yes' : 'No'} />
+                    <MetricRow label="Analyzed At" value={new Date(processing_summary.analyzed_at).toLocaleString()} />
+                    <MetricRow label="Total Images" value={formatNumber(processing_summary.total_images)} />
+                    <MetricRow label="Duration (s)" value={formatNumber(processing_summary.duration_seconds, 2)} />
+                </div>
+            </div>
         </div>
     )
 }

@@ -8,6 +8,7 @@ import { AnalysisResults } from "./analysis-workbench/results/analysis-results"
 import { ErrorDisplay } from "./analysis-workbench/shared/error-display"
 import { getAvailableImages, loadAnalysisResults, ImageData, ComprehensiveAnalysisResults, ContourGroup } from "@/utils/staticDataLoader"
 import { ImageMask } from "@/lib/store/analysisSlice"
+import { FolderAnalysisView } from "./analysis-workbench/folder-analysis/folder-analysis-view"
 
 export default function AnalysisWorkbenchApp() {
     const [images, setImages] = useState<ImageData[]>([])
@@ -19,8 +20,13 @@ export default function AnalysisWorkbenchApp() {
     const [searchQuery, setSearchQuery] = useState("")
     const [sortBy, setSortBy] = useState("filename")
     const [ignoreCache, setIgnoreCache] = useState(true)
+    const [analysisIgnoreCache, setAnalysisIgnoreCache] = useState(true)
+    const [analysisRequestId, setAnalysisRequestId] = useState(0)
     const [fakeProgressToken, setFakeProgressToken] = useState<number | null>(null)
     const [isProgressComplete, setIsProgressComplete] = useState(true)
+    const [showFolderAnalysis, setShowFolderAnalysis] = useState(false)
+
+    const fixedFolderPath = "C:\\Users\\researcher\\Documents\\RedBloodCells\\Samples\\2024-11-10-Demo"
 
     // Load images on mount
     useEffect(() => {
@@ -65,9 +71,21 @@ export default function AnalysisWorkbenchApp() {
 
     const handleIgnoreCacheChange = useCallback((nextIgnoreCache: boolean) => {
         setIgnoreCache(nextIgnoreCache)
+        setAnalysisIgnoreCache(nextIgnoreCache)
         if (!nextIgnoreCache) {
             setFakeProgressToken(null)
         }
+    }, [])
+
+    const handleAnalyzeFolder = useCallback((override?: boolean) => {
+        const effectiveIgnoreCache = typeof override === "boolean" ? override : ignoreCache
+        setAnalysisIgnoreCache(effectiveIgnoreCache)
+        setShowFolderAnalysis(true)
+        setAnalysisRequestId(prev => prev + 1)
+    }, [ignoreCache])
+
+    const handleBackToImages = useCallback(() => {
+        setShowFolderAnalysis(false)
     }, [])
 
     const handleSearchChange = useCallback((query: string) => {
@@ -147,7 +165,7 @@ export default function AnalysisWorkbenchApp() {
     return (
         <div className="flex h-screen bg-white overflow-hidden touch-manipulation">
             <FilePanel
-                folderPath="C:\\Users\\researcher\\Documents\\RedBloodCells\\Samples\\2024-11-10-Demo"
+                folderPath={fixedFolderPath}
                 selectedImage={selectedImage}
                 searchQuery={searchQuery}
                 sortBy={sortBy}
@@ -160,7 +178,7 @@ export default function AnalysisWorkbenchApp() {
                 onSortChange={handleSortChange}
                 onPageChange={() => {}}
                 onPerPageChange={() => {}}
-                onAnalyzeFolder={() => {}}
+                onAnalyzeFolder={handleAnalyzeFolder}
                 ignoreCache={ignoreCache}
                 onIgnoreCacheChange={handleIgnoreCacheChange}
                 disableFolderChange={true}
@@ -173,28 +191,37 @@ export default function AnalysisWorkbenchApp() {
                 />
 
                 <div className="flex-1 overflow-y-auto -webkit-overflow-scrolling-touch">
-                    <ResizablePanels
-                        topPanel={
-                            <ImagePreview
-                                selectedImage={selectedImage}
-                                edgeQualityMasks={edgeQualityMasks}
-                                isProgressComplete={isProgressComplete}
-                            />
-                        }
-                        bottomPanel={
-                            <AnalysisResults
-                                analysisResults={analysisResults}
-                                currentAnalysis={null}
-                                fakeProgressToken={fakeProgressToken}
-                                isProgressComplete={isProgressComplete}
-                                onProgressComplete={handleProgressComplete}
-                            />
-                        }
-                        initialTopHeight={60}
-                        minTopHeight={30}
-                        maxTopHeight={80}
-                        allowParentScroll={true}
-                    />
+                    {showFolderAnalysis ? (
+                        <FolderAnalysisView
+                            folderPath={fixedFolderPath}
+                            ignoreCache={analysisIgnoreCache}
+                            analysisRequestId={analysisRequestId}
+                            onBack={handleBackToImages}
+                        />
+                    ) : (
+                        <ResizablePanels
+                            topPanel={
+                                <ImagePreview
+                                    selectedImage={selectedImage}
+                                    edgeQualityMasks={edgeQualityMasks}
+                                    isProgressComplete={isProgressComplete}
+                                />
+                            }
+                            bottomPanel={
+                                <AnalysisResults
+                                    analysisResults={analysisResults}
+                                    currentAnalysis={null}
+                                    fakeProgressToken={fakeProgressToken}
+                                    isProgressComplete={isProgressComplete}
+                                    onProgressComplete={handleProgressComplete}
+                                />
+                            }
+                            initialTopHeight={60}
+                            minTopHeight={30}
+                            maxTopHeight={80}
+                            allowParentScroll={true}
+                        />
+                    )}
                 </div>
             </div>
         </div>

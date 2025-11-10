@@ -14,7 +14,7 @@ interface FolderSelectorProps {
     loading: boolean
     onFolderSelect: (folderPath: string) => void
     showAnalyzeButton?: boolean
-    onAnalyzeFolder?: () => void
+    onAnalyzeFolder?: (ignoreCache?: boolean) => void
     ignoreCache?: boolean
     onIgnoreCacheChange?: (ignoreCache: boolean) => void
     disableFolderChange?: boolean
