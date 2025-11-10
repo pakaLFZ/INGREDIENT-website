@@ -18,7 +18,7 @@ const DemoRBC = () => {
         {/* Desktop View */}
         <div className="hidden md:block">
           <p className="text-sm md:text-base font-semibold text-gray-500">
-            We design customized research GUIs for secure deployment within your organization's internal network.{" "}
+            We offer Graphical User Interface (GUI) for secure deployment within your organization's internal network.{" "}
             <Link href="/demo-rbc" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-300 underline transition-colors">
               Full screen.
             </Link>
