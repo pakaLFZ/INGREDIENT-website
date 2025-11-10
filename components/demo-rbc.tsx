@@ -18,7 +18,7 @@ const DemoRBC = () => {
         {/* Desktop View */}
         <div className="hidden md:block">
           <p className="text-sm md:text-base font-semibold text-gray-500">
-            We provide a Graphical User Interface (GUI) for intuitive and efficient code access.{" "}
+            We design Graphical User Interface (GUI) for intuitive and efficient code access.{" "}
             <Link href="/demo-rbc" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-300 underline transition-colors">
               Full screen.
             </Link>
