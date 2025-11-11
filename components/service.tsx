@@ -18,7 +18,7 @@ const Service = () => {
     },
     {
       step: 3,
-      title: "Upload your data",
+      title: "Upload data",
       description: "no background information needed.",
     },
     {
