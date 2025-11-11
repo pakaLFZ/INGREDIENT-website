@@ -24,7 +24,7 @@ const Service = () => {
     {
       step: 4,
       title: "Model development",
-      description: "typical turnaround within one week.",
+      description: "typical turnaround within one week. All training data will be deleted afterwards",
     },
     {
       step: 5,
